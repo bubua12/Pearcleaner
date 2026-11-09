@@ -1,0 +1,77 @@
+name: Build (unsigned)
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select newest Xcode
+        run: |
+          ls -d /Applications/Xcode*.app || true
+          XCODE=$(ls -d /Applications/Xcode_*.app | grep -v -i beta | sort -V | tail -1)
+          [ -z "$XCODE" ] && XCODE=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
+          xcodebuild -showsdks
+
+      - name: Resolve Swift packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project Pearcleaner.xcodeproj \
+            -scheme "Pearcleaner Release" \
+            -clonedSourcePackagesDirPath build/SourcePackages
+
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project Pearcleaner.xcodeproj \
+            -scheme "Pearcleaner Release" \
+            -configuration Release \
+            -destination 'generic/platform=macOS' \
+            -derivedDataPath build/DerivedData \
+            -clonedSourcePackagesDirPath build/SourcePackages \
+            -skipPackagePluginValidation \
+            -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS="" \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            ONLY_ACTIVE_ARCH=NO \
+            | tee build/xcodebuild.log | grep -E "error:|warning: .*macos27|BUILD (SUCCEEDED|FAILED)|\*\*" || true
+          grep -q "BUILD SUCCEEDED" build/xcodebuild.log || { grep -E "error:" build/xcodebuild.log | head -50; exit 1; }
+
+      - name: Package app
+        run: |
+          APP=$(find build/DerivedData/Build/Products/Release -maxdepth 1 -name "*.app" | head -1)
+          echo "App: $APP"
+          ls "$APP/Contents" "$APP/Contents/Library" 2>/dev/null || true
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent "$APP" dist/Pearcleaner-unsigned.zip
+          ls -lh dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Pearcleaner-unsigned-${{ github.ref_name }}-${{ github.sha }}
+          path: dist/Pearcleaner-unsigned.zip
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: xcodebuild-log
+          path: build/xcodebuild.log
