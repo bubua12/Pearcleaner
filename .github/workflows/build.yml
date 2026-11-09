@@ -26,12 +26,24 @@ jobs:
           xcodebuild -version
           xcodebuild -showsdks
 
-      - name: Resolve Swift packages
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: build/SourcePackages
+          key: spm-${{ runner.os }}-${{ hashFiles('Pearcleaner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: spm-${{ runner.os }}-
+
+      - name: Resolve Swift packages (with retries)
         run: |
-          xcodebuild -resolvePackageDependencies \
-            -project Pearcleaner.xcodeproj \
-            -scheme "Pearcleaner Release" \
-            -clonedSourcePackagesDirPath build/SourcePackages
+          for i in 1 2 3 4 5; do
+            xcodebuild -resolvePackageDependencies \
+              -project Pearcleaner.xcodeproj \
+              -scheme "Pearcleaner Release" \
+              -clonedSourcePackagesDirPath build/SourcePackages && exit 0
+            echo "Package resolution failed (attempt $i), retrying in $((i*15))s..."
+            sleep $((i*15))
+          done
+          exit 1
 
       - name: Build
         run: |
