@@ -769,20 +769,29 @@ struct SimpleSearchStyleSidebar: TextFieldStyle {
 
     func _body(configuration: TextField<Self._Label>) -> some View {
 
-        HStack {
+        // macOS 27 System Settings style: leading magnifying glass, filled subtle
+        // gray rounded rectangle (no border), ~32pt tall.
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(.secondary)
+
             configuration
-                .font(.title3)
+                .font(.system(size: 13))
                 .textFieldStyle(PlainTextFieldStyle())
 
-            Spacer()
+            Spacer(minLength: 0)
 
             if trash && text != "" {
                 Button {
                     text = ""
                 } label: {
-                    Image(systemName: "delete.left.fill")
-                        .foregroundStyle(ThemeColors.shared(for: colorScheme).secondaryText)
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.tertiary)
+                        .contentShape(Rectangle())
                 }
+                .help("Clear")
             }
 
             if menu {
@@ -849,22 +858,31 @@ struct SimpleSearchStyleSidebar: TextFieldStyle {
                         }
                     }
                 } label: {
-                    Image(systemName: "line.3.horizontal")
-                        .foregroundStyle(ThemeColors.shared(for: colorScheme).secondaryText)
-                        .padding(2)
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
                         .contentShape(Rectangle())
                 }
                 .menuStyle(BorderlessButtonMenuStyle())
                 .menuIndicator(.hidden)
-                .frame(width: 16)
+                .fixedSize()
+                .help("Sorting")
             }
-
-
         }
         .buttonStyle(.plain)
-        .padding(.vertical, 8)
-        .padding(.horizontal, 14)
-        .controlGroup(Capsule(style: .continuous), level: .primary)
+        .padding(.horizontal, 8)
+        .frame(height: 32)
+        .background(
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .fill(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.055))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .strokeBorder(
+                    isFocused ? Color.accentColor.opacity(0.35) : Color.primary.opacity(0.04),
+                    lineWidth: isFocused ? 1 : 0.5)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
         .onHover { hovering in
             withAnimation(Animation.easeInOut(duration: animationEnabled ? 0.35 : 0)) {
                 self.isHovered = hovering

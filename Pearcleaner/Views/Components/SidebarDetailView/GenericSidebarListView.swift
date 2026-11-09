@@ -74,8 +74,9 @@ struct GenericSidebarListView<Item: Identifiable & Hashable, Content: View>: Vie
             } else {
 
                 SearchBarSidebar(search: $searchText, menu: false)
-                    .padding()
-                    .padding(.top, 28) // clears the traffic lights now that the sidebar is full height
+                    .padding(.horizontal, 12)
+                    .padding(.top, 44) // sits just under the traffic lights, like System Settings
+                    .padding(.bottom, 10)
 
                 CategorizedListView(
                     categories: categorizedItems,

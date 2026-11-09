@@ -38,8 +38,9 @@ struct AppSearchView: View {
             } else {
 
                 SearchBarSidebar(search: $search)
-                    .padding()
-                    .padding(.top, 28) // clears the traffic lights now that the sidebar is full height
+                    .padding(.horizontal, 12)
+                    .padding(.top, 44) // sits just under the traffic lights, like System Settings
+                    .padding(.bottom, 10)
 
                 if !filteredApps.isEmpty {
                     AppsListView(
@@ -193,7 +194,7 @@ struct SearchBarSidebar: View {
 
     var body: some View {
         HStack {
-            TextField("Search...", text: $search)
+            TextField("Search", text: $search)
                 .textFieldStyle(SimpleSearchStyleSidebar(menu: menu, trash: true, text: $search))
         }
     }
