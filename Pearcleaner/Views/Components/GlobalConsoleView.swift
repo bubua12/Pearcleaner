@@ -172,8 +172,11 @@ struct GlobalConsoleView: View {
                 }
             }
         }
-        .background(RoundedRectangle(cornerRadius: ifOSBelow(macOS: 26) ? 8 : 20).fill(Color.black))
-        .shadow(color: Color.black.opacity(1), radius: 10, x: 0, y: 0)
+        .background(RoundedRectangle(cornerRadius: FlatDesign.cardRadius, style: .continuous).fill(Color.black))
+        .overlay {
+            RoundedRectangle(cornerRadius: FlatDesign.cardRadius, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.1), lineWidth: 1)
+        }
         .padding(8)
     }
 }

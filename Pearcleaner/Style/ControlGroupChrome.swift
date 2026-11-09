@@ -87,9 +87,12 @@ private struct ControlGroupChrome<Shape: InsettableShape>: ViewModifier {
         content
             .background(material, in: shape)
             .clipShape(shape)
-            .shadow(color: Color.black.opacity(outerRimOpacity), radius: 1, x: 0, y: 0)
-            .shadow(color: Color.black.opacity(shadowOpacity), radius: dark ? 8 : 10, x: 0, y: 0)
-            .chromeBorder(shape: shape, highlightEnabled: true, rimEnabled: false, shadowEnabled: false, highlightIntensity: innerRimOpacity)
+            // macOS 27 flat look: a single hairline border instead of stacked rim/drop shadows
+            .overlay {
+                shape
+                    .strokeBorder(Color.primary.opacity(dark ? 0.12 : 0.1), lineWidth: 1)
+            }
+            .chromeBorder(shape: shape, highlightEnabled: false, rimEnabled: false, shadowEnabled: false)
             .containerShape(shape)
     }
 

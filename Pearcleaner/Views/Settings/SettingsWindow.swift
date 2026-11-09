@@ -24,7 +24,6 @@ struct SettingsView: View {
 
         HStack(spacing: 0) {
             sidebarView
-                .padding(8)
             detailView
                 .padding(.top)
         }
@@ -135,7 +134,7 @@ struct SettingsView: View {
     private var sidebarView: some View {
         VStack(alignment: .center, spacing: 4) {
 
-            Spacer().frame(height: 35)
+            Spacer().frame(height: 43)
 
             VStack(alignment: .leading, spacing: 0) {
                 SidebarItemView(title: CurrentTabView.general.title, systemImage: "gear", isSelected: selectedTab == .general) {

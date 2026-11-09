@@ -641,25 +641,32 @@ extension View {
 }
 
 
+// MARK: - macOS 27 flat design tokens
+/// Shared metrics for the flat, edge-to-edge macOS 27 ("Golden Gate") look:
+/// sidebars are attached to the window edge, cards are flat with a hairline border
+/// and one consistent corner radius, and nothing floats on stacked shadows.
+enum FlatDesign {
+    /// Corner radius for cards, panels and grouped sections
+    static let cardRadius: CGFloat = 12
+    /// Opacity (of the primary text color) used for hairline separators and card borders
+    static let hairlineOpacity: Double = 0.1
+}
+
+/// Flush, full-height sidebar attached to the window's leading edge with a single
+/// hairline divider on its trailing side (replaces the floating inset glass panel).
 struct ifGlassAvailableMain: ViewModifier {
-    @AppStorage("settings.general.glassEffect") private var glassEffect: String = "Regular"
     @AppStorage("settings.general.glass") private var glass: Bool = false
     @Environment(\.colorScheme) var colorScheme
 
     func body(content: Content) -> some View {
-        if #available(macOS 26.0, *) {
-            content
-                .glassEffect(glassEffect == "Regular" ? .regular : .clear, in: .rect(cornerRadius: 20))
-        }
-        else {
-            content
-                .background(backgroundView(color: ThemeColors.shared(for: colorScheme).secondaryBG, glass: glass))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8)
-                        .strokeBorder(ThemeColors.shared(for: colorScheme).primaryText.opacity(0.2), lineWidth: 1)
-                }
-        }
+        content
+            .frame(maxHeight: .infinity)
+            .background(backgroundView(color: ThemeColors.shared(for: colorScheme).secondaryBG, glass: glass))
+            .overlay(alignment: .trailing) {
+                Rectangle()
+                    .fill(ThemeColors.shared(for: colorScheme).primaryText.opacity(FlatDesign.hairlineOpacity))
+                    .frame(width: 1)
+            }
     }
 }
 
@@ -670,30 +677,22 @@ extension View {
 }
 
 
+/// Flat card used for detail drawers and overlay notices: solid panel color,
+/// hairline border, consistent radius, no glass and no drop shadow.
 struct ifGlassAvailableSidebar: ViewModifier {
     @Environment(\.colorScheme) var colorScheme
-    @AppStorage("settings.general.glassEffect") private var glassEffect: String = "Regular"
 
     func body(content: Content) -> some View {
-        if #available(macOS 26.0, *) {
-            content
-                .background(.ultraThinMaterial.opacity(glassEffect == "Regular" ? 0 : 0.7))
-                .glassEffect(glassEffect == "Regular" ? .regular : .clear, in: .rect(cornerRadius: 20))
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 20)
-                        .strokeBorder(ThemeColors.shared(for: colorScheme).primaryText.opacity(0.2), lineWidth: colorScheme == .light ? 1 : 0)
-                }
-        }
-        else {
-            content
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8)
-                        .strokeBorder(ThemeColors.shared(for: colorScheme).primaryText.opacity(0.2), lineWidth: 1)
-                }
-        }
+        content
+            .background(
+                RoundedRectangle(cornerRadius: FlatDesign.cardRadius, style: .continuous)
+                    .fill(ThemeColors.shared(for: colorScheme).secondaryBG)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: FlatDesign.cardRadius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: FlatDesign.cardRadius, style: .continuous)
+                    .strokeBorder(ThemeColors.shared(for: colorScheme).primaryText.opacity(FlatDesign.hairlineOpacity), lineWidth: 1)
+            }
     }
 }
 

@@ -133,6 +133,6 @@ struct PearGroupBox<Header: View, Content: View, Footer: View>: View {
 
     @ViewBuilder
     private var backgroundShape: some Shape {
-        RoundedRectangle(cornerRadius: 7, style: .circular)
+        RoundedRectangle(cornerRadius: FlatDesign.cardRadius, style: .continuous)
     }
 }

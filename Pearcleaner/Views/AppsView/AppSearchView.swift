@@ -39,7 +39,7 @@ struct AppSearchView: View {
 
                 SearchBarSidebar(search: $search)
                     .padding()
-                    .padding(.top, 20)
+                    .padding(.top, 28) // clears the traffic lights now that the sidebar is full height
 
                 if !filteredApps.isEmpty {
                     AppsListView(

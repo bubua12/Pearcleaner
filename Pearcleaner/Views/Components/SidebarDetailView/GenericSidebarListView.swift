@@ -75,7 +75,7 @@ struct GenericSidebarListView<Item: Identifiable & Hashable, Content: View>: Vie
 
                 SearchBarSidebar(search: $searchText, menu: false)
                     .padding()
-                    .padding(.top, 20)
+                    .padding(.top, 28) // clears the traffic lights now that the sidebar is full height
 
                 CategorizedListView(
                     categories: categorizedItems,
@@ -86,7 +86,6 @@ struct GenericSidebarListView<Item: Identifiable & Hashable, Content: View>: Vie
         }
         .frame(width: sidebarWidth)
         .ifGlassMain()
-        .padding([.leading, .vertical], 8)
         .ignoresSafeArea(edges: .top)
         .overlay(alignment: .trailing) {
             // Invisible resize handle on the trailing edge

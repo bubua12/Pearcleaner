@@ -19,7 +19,6 @@ struct InterfaceSettingsTab: View {
     @EnvironmentObject var fsm: FolderSettingsManager
     @Environment(\.colorScheme) var colorScheme
     @AppStorage("settings.general.glass") private var glass: Bool = false
-    @AppStorage("settings.general.glassEffect") private var glassEffect: String = "Regular"
     @AppStorage("settings.interface.animationEnabled") private var animationEnabled: Bool = true
     @AppStorage("settings.interface.minimalist") private var minimalEnabled: Bool = true
     @AppStorage("settings.interface.scrollIndicators") private var scrollIndicators: Bool = false
@@ -39,49 +38,26 @@ struct InterfaceSettingsTab: View {
                          content: {
                 VStack {
 
-                    if #unavailable(macOS 26.0) {
-                        HStack(spacing: 0) {
-                            Image(systemName: glass ? "cube.transparent" : "cube.transparent.fill")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 15, height: 15)
-                                .padding(.trailing)
+                    // Flat edge-to-edge sidebar on every macOS version: offer the translucent
+                    // (behind-window) sidebar background everywhere instead of the old glass picker.
+                    HStack(spacing: 0) {
+                        Image(systemName: glass ? "cube.transparent" : "cube.transparent.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 15, height: 15)
+                            .padding(.trailing)
+                            .foregroundStyle(ThemeColors.shared(for: colorScheme).primaryText)
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("Transparent sidebar")
+                                .font(.callout)
                                 .foregroundStyle(ThemeColors.shared(for: colorScheme).primaryText)
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text("Transparent sidebar")
-                                    .font(.callout)
-                                    .foregroundStyle(ThemeColors.shared(for: colorScheme).primaryText)
-                            }
-                            Spacer()
-                            Toggle(isOn: $glass, label: {
-                            })
-                            .toggleStyle(SettingsToggle())
                         }
-                        .padding(5)
-                    } else {
-                        HStack(spacing: 0) {
-                            Image(systemName: "cube.transparent")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 15, height: 15)
-                                .padding(.trailing)
-                                .foregroundStyle(ThemeColors.shared(for: colorScheme).primaryText)
-                            VStack(alignment: .leading, spacing: 5) {
-                                Text("Glass Effect")
-                                    .font(.callout)
-                                    .foregroundStyle(ThemeColors.shared(for: colorScheme).primaryText)
-                            }
-                            Spacer()
-                            Picker(selection: $glassEffect) {
-                                Text("Regular")
-                                    .tag("Regular")
-                                Text("Clear")
-                                    .tag("Clear")
-                            } label: { EmptyView() }
-                                .buttonStyle(.borderless)
-                        }
-                        .padding(5)
+                        Spacer()
+                        Toggle(isOn: $glass, label: {
+                        })
+                        .toggleStyle(SettingsToggle())
                     }
+                    .padding(5)
 
 
 
