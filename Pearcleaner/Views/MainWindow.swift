@@ -115,7 +115,7 @@ struct MainWindow: View {
                         .foregroundColor(ThemeColors.shared(for: colorScheme).primaryText)
                         .padding(40)
                         .background(
-                            RoundedRectangle(cornerRadius: 20)
+                            RoundedRectangle(cornerRadius: FlatDesign.cardRadius, style: .continuous)
                                 .strokeBorder(style: StrokeStyle(lineWidth: 5, dash: [10, 5]))
                                 .foregroundColor(ThemeColors.shared(for: colorScheme).primaryText)
                         )
@@ -372,8 +372,7 @@ struct MainWindow: View {
             AppSearchView()
                 .frame(width: sidebarWidth)
                 .transition(.opacity)
-                .ifGlassMain()
-                .padding([.leading, .vertical], 8)
+                .ifGlassMain() // flush, full-height sidebar (macOS 27 edge-to-edge style)
                 .ignoresSafeArea(edges: .top)
 
             // Details View with Console
@@ -406,15 +405,6 @@ struct MountedVolumeView: View {
     @AppStorage("settings.interface.animationEnabled") private var animationEnabled: Bool = true
     @AppStorage("settings.tutorial.dragToExpandShown") private var dragTutorialShown: Bool = true
     @State private var selectedVolumeIndex: Int = 0
-
-        // Debug sliders
-    @State private var perspectiveValue: Double = 0.7
-    @State private var rotationValue: Double = 35.0
-    @State private var spacingValue: Double = 100.0
-    @State private var scaleValue: Double = 0.95
-    @State private var minOpacity: Double = 0.5
-    @State private var opacityFade: Double = 0.5
-//    @State private var debugMode: Bool = false
 
     var body: some View {
         ZStack(alignment: .center) {
@@ -464,97 +454,19 @@ struct MountedVolumeView: View {
             }
 
             if !appState.volumeInfos.isEmpty {
-                ZStack {
-                    ForEach(Array(appState.volumeInfos.enumerated()), id: \.element.id) {
-                        index, volume in
-                        let offset = index - selectedVolumeIndex
-
-                        // Only show tiles within 1 position of center
-                        if abs(offset) <= 1 {
-                            let isCenter = offset == 0
-                            let scale = isCenter ? 1.0 : scaleValue
-                            let opacity = isCenter ? 1.0 : minOpacity
-                            let yOffset = Double(offset) * spacingValue
-
-                            // 3D perspective skew - adjustable
-                            let perspective =
-                                isCenter ? 0.0 : (offset > 0 ? -perspectiveValue : perspectiveValue)
-                            let rotationX =
-                                isCenter ? 0.0 : (offset > 0 ? rotationValue : rotationValue)
-
-                            VolumeItemView(volume: volume, isCenter: isCenter, onEject: ejectVolume)
-                                .scaleEffect(scale)
-                                .opacity(opacity)
-                                .offset(y: yOffset)
-                                .rotation3DEffect(
-                                    .degrees(rotationX),
-                                    axis: (x: 1, y: 0, z: 0),
-                                    perspective: perspective
-                                )
-                                .shadow(
-                                    color: isCenter ? .black.opacity(0.3) : .clear,
-                                    radius: isCenter ? 10 : 0, x: 0, y: isCenter ? 5 : 0
-                                )
-                                .zIndex(isCenter ? 10 : Double(10 - abs(offset)))
-                                .onTapGesture {
-                                    withAnimation(
-                                        Animation.spring(response: 0.4, dampingFraction: 0.6)
-                                    ) {
-                                        selectedVolumeIndex = index
-                                    }
-                                }
-                                .animation(
-                                    animationEnabled
-                                        ? .spring(response: 0.4, dampingFraction: 0.6)
-                                        : .linear(duration: 0), value: selectedVolumeIndex)
-                        }
+                // macOS 27 flat layout: every volume is a flat card in a simple list.
+                // (Replaces the 3D carousel that stacked faded duplicate cards behind the selected one.)
+                ViewThatFits(in: .vertical) {
+                    volumeList
+                    ScrollView(.vertical, showsIndicators: false) {
+                        volumeList
+                            .padding(.vertical, 60)
                     }
                 }
             } else {
                 ProgressView()
                     .controlSize(.small)
             }
-
-            // Debug controls at bottom (only show if debug mode enabled)
-//                if debugMode {
-//                    VStack {
-//                        Spacer()
-//                        VStack(spacing: 10) {
-//                            HStack {
-//                                Text("Perspective:")
-//                                Slider(value: $perspectiveValue, in: 0.0...1.0, step: 0.1)
-//                                Text(String(format: "%.1f", perspectiveValue))
-//                            }
-//                            HStack {
-//                                Text("Rotation:")
-//                                Slider(value: $rotationValue, in: 0.0...45.0, step: 1.0)
-//                                Text(String(format: "%.0f°", rotationValue))
-//                            }
-//                            HStack {
-//                                Text("Spacing:")
-//                                Slider(value: $spacingValue, in: 30.0...120.0, step: 5.0)
-//                                Text(String(format: "%.0f", spacingValue))
-//                            }
-//                            HStack {
-//                                Text("Scale:")
-//                                Slider(value: $scaleValue, in: 0.3...1.0, step: 0.05)
-//                                Text(String(format: "%.2f", scaleValue))
-//                            }
-//                            HStack {
-//                                Text("Min Opacity:")
-//                                Slider(value: $minOpacity, in: 0.1...0.9, step: 0.05)
-//                                Text(String(format: "%.2f", minOpacity))
-//                            }
-//                            Button("Toggle Debug") {
-//                                debugMode = false
-//                            }
-//                        }
-//                        .padding()
-//                        .background(ThemeColors.shared(for: colorScheme).secondaryBG)
-//                        .cornerRadius(8)
-//                        .frame(maxWidth: 400)
-//                    }
-//                }
         }
         .padding()
         .ignoresSafeArea(edges: .top)
@@ -569,6 +481,15 @@ struct MountedVolumeView: View {
             }
         }
 
+    }
+
+    private var volumeList: some View {
+        VStack(spacing: 12) {
+            ForEach(appState.volumeInfos, id: \.id) { volume in
+                VolumeItemView(volume: volume, isCenter: true, onEject: ejectVolume)
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private func ejectVolume(_ volume: VolumeInfo) {
@@ -850,12 +771,15 @@ struct VolumeItemView: View {
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: FlatDesign.cardRadius, style: .continuous)
                 .fill(ThemeColors.shared(for: colorScheme).secondaryBG)
         )
+        .overlay {
+            RoundedRectangle(cornerRadius: FlatDesign.cardRadius, style: .continuous)
+                .strokeBorder(ThemeColors.shared(for: colorScheme).primaryText.opacity(FlatDesign.hairlineOpacity), lineWidth: 1)
+        }
         .frame(maxWidth: 500)
         .disabled(!isCenter)
-        .scaleEffect((!isCenter && isHovered) ? 1.01 : 1.0)
         .onHover { hovering in
             if !isCenter {
                 withAnimation(.easeInOut(duration: 0.2)) {
