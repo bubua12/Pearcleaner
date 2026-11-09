@@ -33,6 +33,28 @@ jobs:
           key: spm-${{ runner.os }}-${{ hashFiles('Pearcleaner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
           restore-keys: spm-${{ runner.os }}-
 
+      # github.com/<owner>/<repo>/releases/download/... sometimes returns 504 for
+      # Sparkle's SPM binary zip. Pre-seed SwiftPM's shared artifact cache via the
+      # REST API (different CDN path); SwiftPM still verifies the checksum.
+      - name: Pre-seed Sparkle binary artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VER=$(python3 -c "import json;d=json.load(open('Pearcleaner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved'));print([p['state']['version'] for p in d['pins'] if 'sparkle' in p['location'].lower()][0])")
+          NAME=Sparkle-for-Swift-Package-Manager.zip
+          URL="https://github.com/sparkle-project/Sparkle/releases/download/$VER/$NAME"
+          ID=$(gh api repos/sparkle-project/Sparkle/releases/tags/$VER --jq ".assets[] | select(.name==\"$NAME\") | .id")
+          CACHE="$HOME/Library/Caches/org.swift.swiftpm/artifacts"
+          mkdir -p "$CACHE"
+          MANGLED=$(python3 -c "import re,sys;u=sys.argv[1];m=re.sub(r'[^A-Za-z0-9_]','_',u);print(('_'+m) if m[0].isdigit() else m)" "$URL")
+          for i in 1 2 3; do
+            curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/octet-stream" \
+              "https://api.github.com/repos/sparkle-project/Sparkle/releases/assets/$ID" -o "$CACHE/$MANGLED" && break
+            sleep 10
+          done
+          ls -l "$CACHE"
+          shasum -a 256 "$CACHE/$MANGLED"
+
       - name: Resolve Swift packages (with retries)
         run: |
           for i in 1 2 3 4 5; do
